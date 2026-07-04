@@ -23,6 +23,9 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
     const lang = i18n.language
 
     const [confirmLoading, setConfirmLoading] = useState(false);
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [levelSaveLoading, setLevelSaveLoading] = useState(false);
+    const [deletingModIds, setDeletingModIds] = useState(new Set());
     const [mod, setMod] = useState({})
     const modListRef = useRef(modList)
     const levelsRef = useRef(levels)
@@ -93,9 +96,11 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
     }
 
     function saveModConfig() {
+        setSaveLoading(true)
         const modoverrides = formatModOverride(modListRef.current)
         if (modoverrides === "return { error }") {
             message.warning(t('mod.parse.error'))
+            setSaveLoading(false)
             return Promise.resolve(false)
         }
         const newLevels = levelsRef.current.map(item => ({
@@ -120,6 +125,9 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
                 message.error(t('mod.save.error'))
                 return false
             })
+            .finally(() => {
+                setSaveLoading(false)
+            })
     }
 
     function saveLevelMod() {
@@ -127,6 +135,7 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
             message.warning(t('level.fetch.error'))
             return
         }
+        setLevelSaveLoading(true)
         const modoverrides = formatModOverride()
         const newLevels = levels.map(item=>{
             if (item.uuid === selectedLevelUuid) {
@@ -151,6 +160,9 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
                 console.log(error)
                 message.error(t('level.save.error'))
             })
+            .finally(() => {
+                setLevelSaveLoading(false)
+            })
         console.log(newLevels)
     }
 
@@ -168,10 +180,16 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
     }
 
     const removeMod = (modId) => {
+        setDeletingModIds(current => new Set([...current, modId]))
         const newModList = modList.filter(mod => mod.modid !== modId)
         const modoverrides = formatModOverride(newModList)
         if (modoverrides === "return { error }") {
             message.warning(t('mod.parse.error'))
+            setDeletingModIds(current => {
+                const next = new Set(current)
+                next.delete(modId)
+                return next
+            })
             return Promise.resolve(false)
         }
         const newLevels = levelsRef.current.map(item => {
@@ -201,6 +219,13 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
                 console.log(error)
                 message.error(t('mod.delete.error'))
                 return false
+            })
+            .finally(() => {
+                setDeletingModIds(current => {
+                    const next = new Set(current)
+                    next.delete(modId)
+                    return next
+                })
             })
     }
 
@@ -242,7 +267,7 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
                         </div>
                     </>}
                     <Space size={16} wrap>
-                        <Button type="primary" onClick={() => saveModConfig()}>{t('mod.save')}</Button>
+                        <Button type="primary" loading={saveLoading} onClick={() => saveModConfig()}>{t('mod.save')}</Button>
                         <Popconfirm
                             title={t('mod.tips2')}
                             okText="Yes"
@@ -274,6 +299,7 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
                             style={{
                                 backgroundColor: '#00B96B'
                             }}
+                            loading={levelSaveLoading}
                             onClick={()=>saveLevelMod()}
                         >保存到{selectedLevel?.levelName || selectedLevel?.uuid || ''}</Button>
                     </Space>
@@ -295,6 +321,7 @@ export default ({modList, setModList,defaultConfigOptionsRef, modConfigOptionsRe
                                             removeMod={removeMod}
                                             modList={modList}
                                             setModList={setModList}
+                                            deleting={deletingModIds.has(item.modid)}
                                         />)}
                                 </div>}
                             </div>

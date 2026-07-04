@@ -106,7 +106,7 @@ const ModItem = (props) => {
                                         cancelText="No"
                                         onConfirm={() => removeMod(mod.modid)}
                                     >
-                                        <Button type="text" danger onClick={(event) => {
+                                        <Button type="text" danger loading={props.deleting} disabled={props.deleting} onClick={(event) => {
                                             event.stopPropagation()
                                             setMod(props.mod)
                                         }}>
@@ -161,7 +161,7 @@ const ModItem = (props) => {
                                     cancelText="No"
                                     onConfirm={() => removeMod(mod.modid)}
                                 >
-                                    <Button type="text" danger onClick={(event) => {
+                                    <Button type="text" danger loading={props.deleting} disabled={props.deleting} onClick={(event) => {
                                         event.stopPropagation()
                                         setMod(props.mod)
                                     }}>
